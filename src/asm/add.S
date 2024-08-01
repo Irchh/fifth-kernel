@@ -2,6 +2,5 @@
 .globl add
 
 add:
-    mov %rdi, %rax
-    add %rsi, %rax
+    add a0, a0, a1
     ret
