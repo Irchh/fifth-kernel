@@ -7,6 +7,13 @@ _start:
     la gp, global_pointer
 .option pop
     csrw satp, zero
+    // Go to infinite loop if there are more than 32 harts
+    csrr a0, mhartid
+    addi t0, zero, 32
+    bgeu a0, t0, loop
+
+    add t0, zero, a0
+
     la sp, stack_top
 
     la t5, bss_start
@@ -20,3 +27,6 @@ bss_clear:
     csrw mepc, t0
 
     tail kernel_main
+
+loop:
+    j loop
