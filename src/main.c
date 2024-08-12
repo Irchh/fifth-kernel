@@ -1,17 +1,9 @@
 #include <stdint.h>
 #include <printf.h>
-
-#define csr_read(csr, dst) __asm__ (\
-    "csrr %0, "csr\
-    : "=r" (dst)\
-)
+#include <csr.h>
 
 extern long long add(long long a, long long b);
 
-size_t get_mxlen(size_t misa) {
-    return misa>>(sizeof(size_t)*8-2);
-}
- 
 int kernel_main() {
     long long i = add(4, 5);
     printf("%d", i);
@@ -34,8 +26,21 @@ int kernel_main() {
         }
         printf("\n");
     }
+    size_t mvendorid;
+    csr_read("mvendorid", mvendorid);
+
+    printf("mvendorid = 0x%zX\n", mvendorid);
 
     printf("printf test: %s\n", "eqwe");
 
-    while(1);
+    size_t mstatus;
+    csr_read("mstatus", mstatus);
+    mstatus |= 8;
+    csr_write("mstatus", mstatus);
+
+    csr_read("mstatus", mstatus);
+    printf("mstatus: %d\n", mstatus);
+    while(1) {
+        __asm__("wfi");
+    }
 }
