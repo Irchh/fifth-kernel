@@ -9,8 +9,3 @@
     "csrw "csr", %0"\
     : : "r" (val)\
 )
-
-__attribute__((always_inline))
-size_t get_mxlen(size_t misa) {
-    return misa>>(sizeof(size_t)*8-2);
-}

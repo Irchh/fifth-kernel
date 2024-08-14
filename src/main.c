@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <printf.h>
 #include <csr.h>
+#include "trap.h"
 
 extern long long add(long long a, long long b);
 
@@ -14,9 +15,6 @@ int kernel_main() {
     if (misa == 0) {
         printf("misa is empty\n");
     } else {
-        size_t mxlen = get_mxlen(misa);
-        printf("mxlen = %d\n", mxlen);
-
         // Print extensions
         printf("Supported extensions: ");
         for (int i = 0; i <= 25; i++) {
@@ -26,20 +24,17 @@ int kernel_main() {
         }
         printf("\n");
     }
-    size_t mvendorid;
-    csr_read("mvendorid", mvendorid);
 
-    printf("mvendorid = 0x%zX\n", mvendorid);
+    size_t mideleg = 0;
+    csr_write("mideleg", mideleg);
+    csr_read("mideleg", mideleg);
+    printf("mideleg = %#zx\n", mideleg);
 
     printf("printf test: %s\n", "eqwe");
 
-    size_t mstatus;
-    csr_read("mstatus", mstatus);
-    mstatus |= 8;
-    csr_write("mstatus", mstatus);
+    init_traps();
+    enable_interrupts();
 
-    csr_read("mstatus", mstatus);
-    printf("mstatus: %d\n", mstatus);
     while(1) {
         __asm__("wfi");
     }
