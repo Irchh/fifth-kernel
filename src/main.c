@@ -2,11 +2,12 @@
 #include <printf.h>
 #include <csr.h>
 #include "trap.h"
+#include "fdt.h"
 
 extern long long add(long long a, long long b);
 extern unsigned long long counter;
 
-int kernel_main() {
+int kernel_main(uint64_t _idk, struct fdt_header* dtb) {
     long long i = add(4, 5);
     printf("%d", i);
     printf("Hello, rv64!\n");
@@ -25,6 +26,8 @@ int kernel_main() {
         }
         printf("\n");
     }
+
+    print_fdt_info(dtb);
 
     size_t mideleg = 0;
     csr_write("mideleg", mideleg);
