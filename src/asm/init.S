@@ -8,11 +8,11 @@ _start:
 .option pop
     csrw satp, zero
     // Go to infinite loop if there are more than 32 harts
-    csrr a0, mhartid
+    csrr t1, mhartid
     addi t0, zero, 32
-    bgeu a0, t0, loop
+    bgeu t1, t0, loop
 
-    add t0, zero, a0
+    add t0, zero, t1
 
     la sp, stack_top
 

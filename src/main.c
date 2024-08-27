@@ -4,6 +4,7 @@
 #include "trap.h"
 
 extern long long add(long long a, long long b);
+extern unsigned long long counter;
 
 int kernel_main() {
     long long i = add(4, 5);
@@ -36,6 +37,7 @@ int kernel_main() {
     enable_interrupts();
 
     while(1) {
+        printf("counter: %d\r", counter);
         __asm__("wfi");
     }
 }
