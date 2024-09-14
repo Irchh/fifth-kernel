@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 
 #define FDT_BEGIN_NODE  0x00000001 /* Followed by a null-terminated string called the node unit name */
 #define FDT_END_NODE    0x00000002 /* No extra data */
@@ -23,5 +24,14 @@ struct fdt_reserve_entry {
     uint64_t address;
     uint64_t size;
 };
+
+struct device_information_t {
+    size_t ram_start;
+    size_t ram_size;
+    struct fdt_header* dtb;
+    size_t dtb_size;
+};
+
+extern struct device_information_t device_information;
 
 int print_fdt_info(struct fdt_header* header);

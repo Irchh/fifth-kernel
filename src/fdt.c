@@ -1,4 +1,5 @@
 #include <printf.h>
+#include <string.h>
 #include "fdt.h"
 
 // https://stackoverflow.com/a/52653356
@@ -28,7 +29,13 @@ void print_tabs(int count) {
     }
 }
 
+struct device_information_t device_information;
+
 void parse_dt_struct(char* ptr, char* strings) {
+    // Keep track of where we are in the tree
+    char* node_arr[32] = {0};
+    int node_index = -1;
+
     while (1) {
         uint32_t token = swapb(*CAST(uint32_t*, ptr));
         int tabs = 0;
@@ -39,6 +46,8 @@ void parse_dt_struct(char* ptr, char* strings) {
                 size_t length = sprintf(NULL, "%s", ptr);
                 print_tabs(tabs);
                 printf("FDT_BEGIN_NODE: %s (%zd)\n", ptr, length);
+                node_index++;
+                node_arr[node_index] = ptr;
                 ptr += length + 1; // Include null byte
                 ptr = align32(ptr);
                 tabs++;
@@ -48,6 +57,11 @@ void parse_dt_struct(char* ptr, char* strings) {
                 tabs--;
                 print_tabs(tabs);
                 printf("FDT_END_NODE\n");
+                node_index--;
+                if (node_index < -1) {
+                    node_index = -1;
+                    printf("Warning: Device tree seems to be corrupted\n");
+                }
                 break;
             }
             case FDT_PROP: {
@@ -57,8 +71,28 @@ void parse_dt_struct(char* ptr, char* strings) {
                 ptr += 4;
                 print_tabs(tabs);
                 printf("FDT_PROP: (%d) %s = ", len, &strings[name_offset]);
-                for (int i = 0; i < len; i++) {
-                    printf("%c", ptr[i]);
+                if (strcmp(&strings[name_offset], "reg") == 0 && strncmp(node_arr[node_index], "memory", 6) == 0) {
+                    uint32_t addr1 = swapb(*CAST(uint32_t*, ptr));
+                    uint32_t addr2 = swapb(*CAST(uint32_t*, ptr + 1));
+                    uint32_t size1 = swapb(*CAST(uint32_t*, ptr + 2));
+                    uint32_t size2 = swapb(*CAST(uint32_t*, ptr + 3));
+                    if (size1 > size2) {
+                        device_information.ram_start = addr1;
+                        device_information.ram_size = size1;
+                    } else {
+                        device_information.ram_start = addr2;
+                        device_information.ram_size = size2;
+                    }
+                    printf("<%#x %#x %#x %#x>\n", addr1, addr2, size1, size2);
+                    printf("FDT_PROP: (%d) %s = < ", len, &strings[name_offset]);
+                    for (int i = 0; i < len; i++) {
+                        printf("0x%X ", ptr[i]);
+                    }
+                    printf(">");
+                } else {
+                    for (int i = 0; i < len; i++) {
+                        printf("%c", ptr[i]);
+                    }
                 }
                 printf("\n");
                 ptr += len;
@@ -73,6 +107,9 @@ void parse_dt_struct(char* ptr, char* strings) {
             case FDT_END: {
                 print_tabs(tabs);
                 printf("FDT_END\n");
+                if (node_index != -1) {
+                    printf("Warning: unexpected FDT_END\n");
+                }
                 return;
             }
             default: {
@@ -99,6 +136,9 @@ int print_fdt_info(struct fdt_header* header) {
     printf("fdt_header->boot_cpuid_phys: %#x\n", swapb(header->boot_cpuid_phys));
     printf("fdt_header->size_dt_strings: %#x\n", swapb(header->size_dt_strings));
     printf("fdt_header->size_dt_struct: %#x\n", swapb(header->size_dt_struct));
+
+    device_information.dtb = header;
+    device_information.dtb_size = swapb(header->totalsize);
 
     struct fdt_reserve_entry* reserved_mem_blocks = (void*)header + swapb(header->off_mem_rsvmap);
     size_t i;
