@@ -4,6 +4,7 @@ ENTRY(_start);
  
 SECTIONS {
 	/* Include entry point at start of binary */
+    kernel_start_ptr = .;
 	.text : ALIGN(4K) {
 		*(.init);
 		*(.text);
@@ -25,4 +26,5 @@ SECTIONS {
 		*(.data);
 		*(.data.*);
 	}
+    kernel_end_ptr = .;
 }

@@ -3,6 +3,7 @@
 #include <csr.h>
 #include "trap.h"
 #include "fdt.h"
+#include "frame.h"
 
 extern long long add(long long a, long long b);
 extern unsigned long long counter;
@@ -34,10 +35,28 @@ int kernel_main(uint64_t _idk, struct fdt_header* dtb) {
     csr_read("mideleg", mideleg);
     printf("mideleg = %#zx\n", mideleg);
 
-    printf("printf test: %s\n", "eqwe");
+    init_frames();
+
+    size_t frame1 = first_free_frame();
+    allocate_frame(frame1);
+    printf("Frame1: %#zx\n", frame1);
+
+    size_t frame2 = first_free_frame();
+    allocate_frame(frame2);
+    printf("Frame2: %#zx\n", frame2);
+
+    printf("Deallocating frame1\n");
+    deallocate_frame(frame1);
+    size_t frame3 = first_free_frame();
+    allocate_frame(frame3);
+    printf("Frame3: %#zx\n", frame3);
+
 
     init_traps();
     enable_interrupts();
+
+    printf("RAM START: %#zx\n", device_information.ram_start);
+    printf("RAM SIZE:  %#zx\n", device_information.ram_size);
 
     while(1) {
         printf("counter: %d\r", counter);
