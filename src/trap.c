@@ -1,6 +1,7 @@
 #include <csr.h>
 #include <printf.h>
 #include <stdint.h>
+#include "trap.h"
 
 static unsigned char TRAP_STACK[4096] __attribute__ ((aligned (4096)));
 unsigned long long counter __attribute__((aligned(16))) = 0;
@@ -46,6 +47,8 @@ __attribute__((naked, aligned)) void naked_trap_handler(void) {
 
         "csrr x1, mepc\n"
         "sd x1, (0*8)(sp)\n"
+
+        "addi a0, sp, 0\n"
 
         "call trap_handler\n"
 
@@ -93,29 +96,37 @@ __attribute__((naked, aligned)) void naked_trap_handler(void) {
 extern uint64_t read_mtime(void);
 extern void write_mtimecmp(uint64_t value);
 
-void handle_interrupt(long long cause) {
+void handle_interrupt(long long cause, register_state_t* regs) {
     //printf("Interrupt! cause: %#zX\n", cause);
     // Timer
-    if (cause == 7) {
+    if (cause == INT_TIMER) {
         counter++;
         write_mtimecmp(read_mtime() + 1000000);
     }
 }
 
-void handle_trap(long long cause) {
-    printf("Trap! cause: %#zX\n", cause);
-    while(1);
+void handle_trap(long long cause, register_state_t* regs) {
+    switch (cause) {
+        case TRAP_ECALL: {
+            regs->mepc += 4;
+            break;
+        }
+        default: {
+            printf("Trap! cause: %#zX\n", cause);
+            while(1);
+        }
+    }
 }
 
-void trap_handler(void) {
+void trap_handler(register_state_t* regs) {
     size_t mcause;
     long long cause;
     csr_read("mcause", mcause);
     cause = mcause & (~(1L<<63)); 
     if ((long long)mcause < 0) {
-        handle_interrupt(cause);
+        handle_interrupt(cause, regs);
     } else {
-        handle_trap(cause);
+        handle_trap(cause, regs);
     }
 }
 
