@@ -107,7 +107,7 @@ void handle_interrupt(long long cause, register_state_t* regs) {
 
 void handle_trap(long long cause, register_state_t* regs) {
     switch (cause) {
-        case TRAP_ECALL: {
+        case TRAP_M_ECALL: {
             regs->mepc += 4;
             break;
         }

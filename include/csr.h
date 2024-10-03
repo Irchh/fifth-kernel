@@ -9,3 +9,5 @@
     "csrw "csr", %0"\
     : : "r" (val)\
 )
+
+void mstatus_set_mpp(size_t level);

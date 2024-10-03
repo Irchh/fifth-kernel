@@ -1,6 +1,6 @@
 #include <stddef.h>
 
-#define TRAP_ECALL 0xB
+#define TRAP_M_ECALL 0xB
 
 #define INT_TIMER 0x7
 
