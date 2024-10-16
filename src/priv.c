@@ -1,7 +1,7 @@
 #include "priv.h"
 #include "csr.h"
 
-void set_priv_m(size_t level, void* entry_func) {
+void set_priv_m(size_t level, void* entry_func, struct fdt_header* dtb) {
     mstatus_set_mpp(level);
 
     size_t mepc = (size_t)entry_func;
@@ -14,6 +14,8 @@ void set_priv_m(size_t level, void* entry_func) {
     size_t pmpcfg0 = 0xf;
     csr_write("pmpaddr0", pmpaddr0);
     csr_write("pmpcfg0", pmpcfg0);
-    __asm__("mret");
+    __asm__("mret"
+    : : "r" (dtb)
+    );
     while (1);
 }

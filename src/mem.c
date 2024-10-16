@@ -14,3 +14,10 @@ void* memset(void* dest, int c, size_t count) {
         (*_dest++) = c;
     return dest;
 }
+
+void* memcpy(void* dest, const void* src, size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        ((char*)dest)[i] = ((char*)src)[i];
+    }
+    return dest;
+}

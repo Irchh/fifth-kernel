@@ -2,6 +2,7 @@
 .global read_mtime
 .global write_mtimecmp
 .global read_mtimecmp
+
 .equ mtimecmp, 0x2004000
 .equ mtime, 0x200BFF8
 

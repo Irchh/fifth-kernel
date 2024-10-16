@@ -1,8 +1,10 @@
 #include <stddef.h>
 
 #define TRAP_M_ECALL 0xB
+#define INT_M_TIMER 0x7
 
-#define INT_TIMER 0x7
+#define TRAP_S_ECALL 0x9
+#define INT_S_TIMER 0x5
 
 typedef struct {
     size_t mepc;

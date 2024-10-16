@@ -8,12 +8,10 @@ unsigned long long counter __attribute__((aligned(16))) = 0;
 
 __attribute__((naked, aligned)) void naked_trap_handler(void) {
     __asm__(
-        "csrrw sp, mscratch, sp\n"
+        "csrrw sp, sscratch, sp\n"
         "addi sp, sp, -256\n"
 
         "sd x1, (1*8)(sp)\n"
-        // Save sp which is x2
-        "csrr x1, mscratch\n"
         "sd x2, (2*8)(sp)\n"
         "sd x3, (3*8)(sp)\n"
         "sd x4, (4*8)(sp)\n"
@@ -45,7 +43,7 @@ __attribute__((naked, aligned)) void naked_trap_handler(void) {
         "sd x30, (30*8)(sp)\n"
         "sd x31, (31*8)(sp)\n"
 
-        "csrr x1, mepc\n"
+        "csrr x1, sepc\n"
         "sd x1, (0*8)(sp)\n"
 
         "addi a0, sp, 0\n"
@@ -53,7 +51,7 @@ __attribute__((naked, aligned)) void naked_trap_handler(void) {
         "call trap_handler\n"
 
         "ld x1, (0*1)(sp)\n"
-        "csrw mepc, x1\n"
+        "csrw sepc, x1\n"
 
         "ld x1, (1*8)(sp)\n"
         // Don't restore sp here
@@ -88,8 +86,8 @@ __attribute__((naked, aligned)) void naked_trap_handler(void) {
         "ld x31, (31*8)(sp)\n"
 
         "addi sp, sp, 256\n"
-        "csrrw sp, mscratch, sp\n" // Should we swap sp and mscratch here, or load the trap handler sp some other way?
-        "mret"
+        "csrrw sp, sscratch, sp\n" // Should we swap sp and sscratch here, or load the trap handler sp some other way?
+        "sret"
     );
 }
 
@@ -99,15 +97,21 @@ extern void write_mtimecmp(uint64_t value);
 void handle_interrupt(long long cause, register_state_t* regs) {
     //printf("Interrupt! cause: %#zX\n", cause);
     // Timer
-    if (cause == INT_TIMER) {
+    if (cause == INT_M_TIMER || cause == INT_S_TIMER) {
         counter++;
         write_mtimecmp(read_mtime() + 1000000);
+    } else {
+        printf("Interrupt! cause: %#zX\n", cause);
     }
 }
 
 void handle_trap(long long cause, register_state_t* regs) {
     switch (cause) {
         case TRAP_M_ECALL: {
+            regs->mepc += 4;
+            break;
+        }
+        case TRAP_S_ECALL: {
             regs->mepc += 4;
             break;
         }
@@ -119,11 +123,11 @@ void handle_trap(long long cause, register_state_t* regs) {
 }
 
 void trap_handler(register_state_t* regs) {
-    size_t mcause;
+    size_t scause;
     long long cause;
-    csr_read("mcause", mcause);
-    cause = mcause & (~(1L<<63)); 
-    if ((long long)mcause < 0) {
+    csr_read("scause", scause);
+    cause = scause & (~(1L<<63));
+    if ((long long)scause < 0) {
         handle_interrupt(cause, regs);
     } else {
         handle_trap(cause, regs);
@@ -131,17 +135,17 @@ void trap_handler(register_state_t* regs) {
 }
 
 void init_traps() {
-    printf("Init mtvec to trap handler function\n");
-    csr_write("mtvec", ((size_t)&naked_trap_handler)&~0b11);
-    csr_write("mscratch", &TRAP_STACK[4096]);
+    printf("Init stvec to trap handler function\n");
+    csr_write("stvec", ((size_t)&naked_trap_handler)&~0b11);
+    csr_write("sscratch", &TRAP_STACK[4096]);
 }
 
 void enable_interrupts() {
     printf("Enabling Interrupt\n");
 
-    size_t mstatus;
-    csr_read("mstatus", mstatus);
-    mstatus |= 0x8; // Enable interrupt
-    csr_write("mstatus", mstatus);
-    csr_write("mie", 0xFF);
+    size_t sstatus;
+    csr_read("sstatus", sstatus);
+    sstatus |= 0x2; // Enable interrupt
+    csr_write("sstatus", sstatus);
+    csr_write("sie", 0xFF);
 }

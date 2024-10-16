@@ -35,10 +35,10 @@ void parse_dt_struct(char* ptr, char* strings) {
     // Keep track of where we are in the tree
     char* node_arr[32] = {0};
     int node_index = -1;
+    int tabs = 0;
 
     while (1) {
         uint32_t token = swapb(*CAST(uint32_t*, ptr));
-        int tabs = 0;
         ptr += 4;
         switch (token) {
             case FDT_BEGIN_NODE: {
@@ -85,12 +85,12 @@ void parse_dt_struct(char* ptr, char* strings) {
                     }
                     printf("<%#x %#x %#x %#x>\n", addr1, addr2, size1, size2);
                     printf("FDT_PROP: (%d) %s = < ", len, &strings[name_offset]);
-                    for (int i = 0; i < len; i++) {
+                    for (uint32_t i = 0; i < len; i++) {
                         printf("0x%X ", ptr[i]);
                     }
                     printf(">");
                 } else {
-                    for (int i = 0; i < len; i++) {
+                    for (uint32_t i = 0; i < len; i++) {
                         printf("%c", ptr[i]);
                     }
                 }

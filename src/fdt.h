@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifndef FDT_H
+#define FDT_H
+
 #define FDT_BEGIN_NODE  0x00000001 /* Followed by a null-terminated string called the node unit name */
 #define FDT_END_NODE    0x00000002 /* No extra data */
 #define FDT_PROP        0x00000003 /* Followed by two 32-bit BE numbers, length and name offset. */
@@ -35,3 +38,4 @@ struct device_information_t {
 extern struct device_information_t device_information;
 
 int print_fdt_info(struct fdt_header* header);
+#endif
