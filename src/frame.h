@@ -11,4 +11,9 @@ size_t allocate_first_frame();
 void deallocate_frame(size_t frame);
 void allocate_n_frames(size_t frame, size_t count);
 
+extern const size_t kernel_start_ptr;
+extern const size_t kernel_end_ptr;
+extern size_t kernel_start;
+extern size_t kernel_end;
+
 #endif

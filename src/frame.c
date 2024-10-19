@@ -5,8 +5,6 @@
 
 uint8_t frames[32768]; // 4096 * 8 = enough data to allocate up to 1 GiB in frames. Each 4096 bytes is equivalent to 128 MiB in 4KiB frames.
 
-extern const size_t kernel_start_ptr;
-extern const size_t kernel_end_ptr;
 size_t kernel_start = (size_t)&kernel_start_ptr;
 size_t kernel_end = (size_t)&kernel_end_ptr;
 
