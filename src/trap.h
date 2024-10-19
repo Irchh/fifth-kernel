@@ -1,3 +1,6 @@
+#ifndef TRAP_H
+#define TRAP_H
+
 #include <stddef.h>
 
 #define TRAP_M_ECALL 0xB
@@ -43,3 +46,5 @@ typedef struct {
 
 void init_traps();
 void enable_interrupts();
+
+#endif
