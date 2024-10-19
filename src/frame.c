@@ -14,13 +14,18 @@ size_t pages(size_t bytes) {
     return (bytes + 4095)/4096;
 }
 
-void allocate_frame(size_t frame) {
+size_t allocate_frame(size_t frame) {
     if (frame >= sizeof(frames)) {
-        return;
+        return -1;
     }
     size_t byte = frame/8;
     size_t bit = frame%8;
     frames[byte] |= 1<<bit;
+    return frame;
+}
+
+size_t allocate_first_frame() {
+    return allocate_frame(first_free_frame());
 }
 
 void deallocate_frame(size_t frame) {

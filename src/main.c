@@ -6,6 +6,7 @@
 #include "frame.h"
 #include "priv.h"
 #include "mem.h"
+#include "page.h"
 
 extern long long add(long long a, long long b);
 extern unsigned long long counter;
@@ -19,12 +20,7 @@ int _kernel_main(struct fdt_header* dtb) {
 
     init_frames();
 
-    size_t frame1 = device_information.ram_start + 4096*first_free_frame();
-    allocate_frame(frame1);
-    printf("Frame1: %#zx\n", frame1);
-    memset((char*)(frame1), 0, 4096);
-
-    // TODO: blablablabla page table stuff and memory
+    enable_paging();
 
     init_traps();
     enable_interrupts();
