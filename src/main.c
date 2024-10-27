@@ -11,7 +11,7 @@
 extern long long add(long long a, long long b);
 extern unsigned long long counter;
 
-int _kernel_main(struct fdt_header* dtb) {
+int kernel_main(struct fdt_header* dtb) {
     long long i = add(4, 5);
     printf("%d", i);
     printf("Hello, rv64!\n");
@@ -37,7 +37,7 @@ int _kernel_main(struct fdt_header* dtb) {
     }
 }
 
-int kernel_main(uint64_t _idk, struct fdt_header* dtb) {
+int kernel_init(uint64_t _idk, struct fdt_header* dtb) {
     size_t misa;
     csr_read("misa", misa);
     if (misa == 0) {
@@ -62,5 +62,5 @@ int kernel_main(uint64_t _idk, struct fdt_header* dtb) {
     init_traps();
     enable_interrupts();
 
-    set_priv_m(01, &_kernel_main, dtb);
+    set_priv_m(01, &kernel_main, dtb);
 }
