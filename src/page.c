@@ -73,14 +73,14 @@ int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
     return 0;
 }
 
-extern size_t kernel_start;
-extern size_t kernel_end;
+extern size_t kernel_start_addr;
+extern size_t kernel_end_addr;
 
 void enable_paging() {
     pte_rv39_t* pt = allocate_new_page_table();
 
-    size_t kernel_start_page = kernel_start/4096;
-    size_t kernel_end_page = (kernel_end+4095)/4096;
+    size_t kernel_start_page = kernel_start_addr/4096;
+    size_t kernel_end_page = (kernel_end_addr+4095)/4096;
 
     for (size_t page = kernel_start_page; page <= kernel_end_page; page++) {
         map_page(pt, page, page, MAP_PAGE);

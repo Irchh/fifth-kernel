@@ -5,13 +5,22 @@
 #include "fdt.h"
 #include "frame.h"
 #include "priv.h"
-#include "mem.h"
 #include "page.h"
 
 extern long long add(long long a, long long b);
 extern unsigned long long counter;
 
-int kernel_main(struct fdt_header* dtb) {
+void kernel_main() {
+    uint64_t counter2 = 0;
+
+    while(1) {
+        printf("counter: %d (%zd)\r", counter, counter2++);
+        __asm__("wfi");
+        __asm__("ecall");
+    }
+}
+
+void kernel_init(struct fdt_header* dtb) {
     long long i = add(4, 5);
     printf("%d", i);
     printf("Hello, rv64!\n");
@@ -28,16 +37,10 @@ int kernel_main(struct fdt_header* dtb) {
     printf("RAM START: %#zx\n", device_information.ram_start);
     printf("RAM SIZE:  %#zx (%zu MiB)\n", device_information.ram_size, device_information.ram_size/1024/1024);
 
-    uint64_t counter2 = 0;
-
-    while(1) {
-        printf("counter: %d (%zd)\r", counter, counter2++);
-        __asm__("wfi");
-        __asm__("ecall");
-    }
+    kernel_main();
 }
 
-int kernel_init(uint64_t _idk, struct fdt_header* dtb) {
+int kernel_start(uint64_t _idk, struct fdt_header* dtb) {
     size_t misa;
     csr_read("misa", misa);
     if (misa == 0) {
@@ -59,8 +62,6 @@ int kernel_init(uint64_t _idk, struct fdt_header* dtb) {
     csr_write("mideleg", mideleg);
     csr_write("medeleg", medeleg);
 
-    init_traps();
-    enable_interrupts();
-
-    set_priv_m(01, &kernel_main, dtb);
+    set_priv_m(01, &kernel_init, dtb);
+    return -1; // init failed ig
 }

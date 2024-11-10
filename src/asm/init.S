@@ -23,10 +23,10 @@ bss_clear:
     addi t5, t5, 8
     bltu t5, t6, bss_clear
 
-    la t0, kernel_init
+    la t0, kernel_start
     csrw mepc, t0
 
-    tail kernel_init
+    tail kernel_start
 
 loop:
     j loop

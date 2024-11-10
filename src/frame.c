@@ -5,8 +5,8 @@
 
 uint8_t frames[32768]; // 4096 * 8 = enough data to allocate up to 1 GiB in frames. Each 4096 bytes is equivalent to 128 MiB in 4KiB frames.
 
-size_t kernel_start = (size_t)&kernel_start_ptr;
-size_t kernel_end = (size_t)&kernel_end_ptr;
+size_t kernel_start_addr = (size_t)&kernel_start_ptr;
+size_t kernel_end_addr = (size_t)&kernel_end_ptr;
 
 size_t pages(size_t bytes) {
     return (bytes + 4095)/4096;
@@ -48,7 +48,7 @@ void init_frames() {
         frames[i] = 0;
     }
 
-    allocate_n_frames(page_of(kernel_start - device_information.ram_start), pages(kernel_end - kernel_start));
+    allocate_n_frames(page_of(kernel_start_addr - device_information.ram_start), pages(kernel_end_addr - kernel_start_addr));
     allocate_n_frames(page_of((size_t)device_information.dtb - device_information.ram_start), pages(device_information.dtb_size));
 }
 
