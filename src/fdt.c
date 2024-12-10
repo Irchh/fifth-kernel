@@ -76,13 +76,8 @@ void parse_dt_struct(char* ptr, char* strings) {
                     uint32_t addr2 = swapb(*CAST(uint32_t*, ptr + 1));
                     uint32_t size1 = swapb(*CAST(uint32_t*, ptr + 2));
                     uint32_t size2 = swapb(*CAST(uint32_t*, ptr + 3));
-                    if (size1 > size2) {
-                        device_information.ram_start = addr1;
-                        device_information.ram_size = size1;
-                    } else {
-                        device_information.ram_start = addr2;
-                        device_information.ram_size = size2;
-                    }
+                    device_information.ram_start = ((uint64_t)addr1)<< 32 | addr2;
+                    device_information.ram_size = ((uint64_t)size1)<< 32 | size2;
                     printf("<%#x %#x %#x %#x>\n", addr1, addr2, size1, size2);
                     printf("FDT_PROP: (%d) %s = < ", len, &strings[name_offset]);
                     for (uint32_t i = 0; i < len; i++) {
