@@ -33,6 +33,10 @@ struct device_information_t {
     size_t ram_size;
     struct fdt_header* dtb;
     size_t dtb_size;
+    struct {
+        size_t address;
+        size_t size;
+    } mapped_locations[64];
 };
 
 extern struct device_information_t device_information;

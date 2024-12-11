@@ -34,6 +34,8 @@ struct device_information_t device_information;
 void parse_dt_struct(char* ptr, char* strings) {
     // Keep track of where we are in the tree
     char* node_arr[32] = {0};
+    uint32_t address_cells_arr[32] = {1};
+    uint32_t size_cells_arr[32] = {1};
     int node_index = -1;
     int tabs = 0;
 
@@ -62,6 +64,12 @@ void parse_dt_struct(char* ptr, char* strings) {
                     node_index = -1;
                     printf("Warning: Device tree seems to be corrupted\n");
                 }
+                for (int i = node_index+1; i < 32; i++) {
+                    address_cells_arr[i] = address_cells_arr[node_index];
+                }
+                for (int i = node_index+1; i < 32; i++) {
+                    size_cells_arr[i] = size_cells_arr[node_index];
+                }
                 break;
             }
             case FDT_PROP: {
@@ -71,19 +79,48 @@ void parse_dt_struct(char* ptr, char* strings) {
                 ptr += 4;
                 print_tabs(tabs);
                 printf("FDT_PROP: (%d) %s = ", len, &strings[name_offset]);
-                if (strcmp(&strings[name_offset], "reg") == 0 && strncmp(node_arr[node_index], "memory", 6) == 0) {
-                    uint32_t addr1 = swapb(*CAST(uint32_t*, ptr));
-                    uint32_t addr2 = swapb(*CAST(uint32_t*, ptr + 1));
-                    uint32_t size1 = swapb(*CAST(uint32_t*, ptr + 2));
-                    uint32_t size2 = swapb(*CAST(uint32_t*, ptr + 3));
-                    device_information.ram_start = ((uint64_t)addr1)<< 32 | addr2;
-                    device_information.ram_size = ((uint64_t)size1)<< 32 | size2;
-                    printf("<%#x %#x %#x %#x>\n", addr1, addr2, size1, size2);
-                    printf("FDT_PROP: (%d) %s = < ", len, &strings[name_offset]);
-                    for (uint32_t i = 0; i < len; i++) {
-                        printf("0x%X ", ptr[i]);
+                // Don't map bogus cpu and don't map entire memory space either
+                if (strcmp(&strings[name_offset], "reg") == 0 && strncmp(node_arr[node_index], "cpu", 3) != 0 && strncmp(node_arr[node_index], "memory", 6) != 0) {
+                    int ranges = (len / sizeof(uint32_t)) / (size_cells_arr[node_index] + address_cells_arr[node_index]);
+                    printf("<");
+                    for (int i = 0; i < ranges*4; i++) {
+                        if (i != 0) {
+                            printf(" ");
+                        }
+                        printf("%#x", swapb(*CAST(uint32_t*, ptr + i)));
                     }
                     printf(">");
+                    for (int i = 0; i < ranges; i++) {
+                        int free_map = -1;
+                        for (int j = 0; j < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); j++) {
+                            if (device_information.mapped_locations[j].size == 0 && device_information.mapped_locations[j].address == 0) {
+                                free_map = j;
+                                break;
+                            }
+                        }
+                        if (free_map == -1)
+                            break;
+                        if (size_cells_arr[node_index] == 0) {
+                            device_information.mapped_locations[free_map].address = swapb64(CAST(uint64_t*, ptr)[i]);
+                        } else {
+                            device_information.mapped_locations[free_map].address = swapb64(CAST(uint64_t*, ptr)[i*2]);
+                            device_information.mapped_locations[free_map].size = swapb64(CAST(uint64_t*, ptr)[i*2 + 1]);
+                        }
+                    }
+                    if (strncmp(node_arr[node_index], "memory", 6) == 0) {
+                        device_information.ram_start = swapb64(*CAST(uint64_t*, ptr));
+                        device_information.ram_size = swapb64(*CAST(uint64_t*, ptr + 1));
+                    }
+                } else if (strcmp(&strings[name_offset], "#address-cells") == 0) {
+                    for (int i = node_index; i < 32; i++) {
+                        address_cells_arr[i] = swapb(*CAST(uint32_t*, ptr));
+                    }
+                    printf("%d", address_cells_arr[node_index]);
+                } else if (strcmp(&strings[name_offset], "#size-cells") == 0) {
+                    for (int i = node_index; i < 32; i++) {
+                        size_cells_arr[i] = swapb(*CAST(uint32_t*, ptr));
+                    }
+                    printf("%d", size_cells_arr[node_index]);
                 } else {
                     for (uint32_t i = 0; i < len; i++) {
                         printf("%c", ptr[i]);

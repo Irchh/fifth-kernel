@@ -7,7 +7,7 @@
 
 pte_rv39_t* allocate_new_page_table() {
     void* pt = (void*)(device_information.ram_start + 4096*allocate_first_frame());
-    printf("Page table frame: %#zx\n", pt);
+    //printf("Page table frame: %#zx\n", pt);
     memset(pt, 0, 4096);
     return pt;
 }
@@ -85,18 +85,17 @@ void enable_paging() {
     for (size_t page = kernel_start_page; page <= kernel_end_page; page++) {
         map_page(pt, page, page, MAP_PAGE);
     }
-
-    // Map upto kernel kindof
-    // TODO: Figure out what actually needs to be mapped
-    for (size_t page = 0; page < kernel_start_page; page += MAP_GIGAPAGE_ALIGN) {
-        int result = map_page(pt, page, page, MAP_GIGAPAGE);
-        printf("Gigapage map result: %d\n", result);
+    
+    // Map memory mapped devices like uart, etc.
+    for (int i = 0; i < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); i++) {
+        if (device_information.mapped_locations[i].address == 0 && device_information.mapped_locations[i].size == 0)
+            continue;
+        size_t start_page = device_information.mapped_locations[i].address / 4096;
+        size_t end_page = (device_information.mapped_locations[i].address + device_information.mapped_locations[i].size + 4095) / 4096;
+        // TODO: Map larger pages for larger areas
+        for (size_t page = start_page; page <= end_page; page++)
+            map_page(pt, page, page, MAP_PAGE);
     }
-
-    // uart
-    int result = map_page(pt, 0x10000/4096, 0x10000/4096, MAP_PAGE);
-    printf("UART map result: %d\n", result);
-    //create_ident_map_page_table((void*) pt);
 
     size_t satp;
     csr_write("satp", ((size_t)pt)/4096 | PAGING_MODE_SV39);
