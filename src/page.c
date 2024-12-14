@@ -7,7 +7,6 @@
 
 pte_rv39_t* allocate_new_page_table() {
     void* pt = (void*)(device_information.ram_start + 4096*allocate_first_frame());
-    //printf("Page table frame: %#zx\n", pt);
     memset(pt, 0, 4096);
     return pt;
 }
@@ -76,23 +75,28 @@ int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
 extern size_t kernel_start_addr;
 extern size_t kernel_end_addr;
 
+// Should only be called once at boot to transition to virtual memory
 void enable_paging() {
     pte_rv39_t* pt = allocate_new_page_table();
 
     size_t kernel_start_page = kernel_start_addr/4096;
     size_t kernel_end_page = (kernel_end_addr+4095)/4096;
 
+    // Map kernel pages
     for (size_t page = kernel_start_page; page <= kernel_end_page; page++) {
+        // Keep currently needed pages as well, since we don't jump yet
         map_page(pt, page, page, MAP_PAGE);
+        // Higher-half kernel maps
+        map_page(pt, page, HIGHER_HALF_VPN+page-kernel_start_page, MAP_PAGE);
     }
-    
+
     // Map memory mapped devices like uart, etc.
     for (int i = 0; i < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); i++) {
         if (device_information.mapped_locations[i].address == 0 && device_information.mapped_locations[i].size == 0)
             continue;
         size_t start_page = device_information.mapped_locations[i].address / 4096;
         size_t end_page = (device_information.mapped_locations[i].address + device_information.mapped_locations[i].size + 4095) / 4096;
-        // TODO: Map larger pages for larger areas
+        // TODO: Map larger pages for larger areas, if possible
         for (size_t page = start_page; page <= end_page; page++)
             map_page(pt, page, page, MAP_PAGE);
     }

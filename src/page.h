@@ -17,6 +17,9 @@
 #define ERR_ALIGN -1
 #define ERR_ALREADY_MAPPED -2
 
+#define HIGHER_HALF_ADDR_START 0xFFFFFFC000000000
+#define HIGHER_HALF_VPN 0x4000000
+
 typedef unsigned int map_t;
 
 typedef struct __attribute__((packed)) {

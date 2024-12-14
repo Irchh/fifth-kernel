@@ -13,6 +13,9 @@ extern unsigned long long counter;
 void kernel_main() {
     uint64_t counter2 = 0;
 
+    printf("Addr of counter: %#zx\n", &counter);
+    printf("Addr of counter2: %#zx\n", &counter2);
+
     while(1) {
         printf("counter: %d (%zd)\r", counter, counter2++);
         __asm__("wfi");
@@ -37,7 +40,14 @@ void kernel_init(struct fdt_header* dtb) {
     printf("RAM START: %#zx\n", device_information.ram_start);
     printf("RAM SIZE:  %#zx (%zu MiB)\n", device_information.ram_size, device_information.ram_size/1024/1024);
 
-    kernel_main();
+    // Modify the stack to use the higher address
+    __asm__(
+        "add sp, sp, %0\n"
+        : : "r" (HIGHER_HALF_ADDR_START - kernel_start_addr)
+    );
+    void (*kernel_main_hi)() = &kernel_main + HIGHER_HALF_ADDR_START - kernel_start_addr;
+    kernel_main_hi();
+    //kernel_main();
 }
 
 int kernel_start(uint64_t _idk, struct fdt_header* dtb) {
