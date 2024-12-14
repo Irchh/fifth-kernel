@@ -107,10 +107,9 @@ void parse_dt_struct(char* ptr, char* strings) {
                             device_information.mapped_locations[free_map].size = swapb64(CAST(uint64_t*, ptr)[i*2 + 1]);
                         }
                     }
-                    if (strncmp(node_arr[node_index], "memory", 6) == 0) {
+                } else if (strcmp(&strings[name_offset], "reg") == 0 && strncmp(node_arr[node_index], "memory", 6) == 0) {
                         device_information.ram_start = swapb64(*CAST(uint64_t*, ptr));
                         device_information.ram_size = swapb64(*CAST(uint64_t*, ptr + 1));
-                    }
                 } else if (strcmp(&strings[name_offset], "#address-cells") == 0) {
                     for (int i = node_index; i < 32; i++) {
                         address_cells_arr[i] = swapb(*CAST(uint32_t*, ptr));
