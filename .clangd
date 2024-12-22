@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-I/home/irch/src/osdev/new_c_kern/include, -xc, -Wall]
+  Add: [-I/home/irch/src/osdev/new_c_kern/include, -I/home/irch/source/osdev/fifth-kernel/include, -xc, -Wall]

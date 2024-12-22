@@ -91,7 +91,7 @@ void enable_paging() {
     }
 
     // Map memory mapped devices like uart, etc.
-    for (int i = 0; i < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); i++) {
+    for (size_t i = 0; i < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); i++) {
         if (device_information.mapped_locations[i].address == 0 && device_information.mapped_locations[i].size == 0)
             continue;
         size_t start_page = device_information.mapped_locations[i].address / 4096;

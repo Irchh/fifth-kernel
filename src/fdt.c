@@ -92,7 +92,7 @@ void parse_dt_struct(char* ptr, char* strings) {
                     printf(">");
                     for (int i = 0; i < ranges; i++) {
                         int free_map = -1;
-                        for (int j = 0; j < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); j++) {
+                        for (size_t j = 0; j < sizeof(device_information.mapped_locations)/sizeof(device_information.mapped_locations[0]); j++) {
                             if (device_information.mapped_locations[j].size == 0 && device_information.mapped_locations[j].address == 0) {
                                 free_map = j;
                                 break;

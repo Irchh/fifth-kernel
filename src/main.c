@@ -17,7 +17,7 @@ void kernel_main() {
     printf("Addr of counter2: %#zx\n", &counter2);
 
     while(1) {
-        printf("counter: %d (%zd)\r", counter, counter2++);
+        printf("counter: %zd (%zd)\r", counter, counter2++);
         __asm__("wfi");
         __asm__("ecall");
     }
@@ -25,7 +25,7 @@ void kernel_main() {
 
 void kernel_init(struct fdt_header* dtb) {
     long long i = add(4, 5);
-    printf("%d", i);
+    printf("%zd", i);
     printf("Hello, rv64!\n");
 
     print_fdt_info(dtb);
@@ -59,7 +59,7 @@ int kernel_start(uint64_t _idk, struct fdt_header* dtb) {
         // Print extensions
         printf("Supported extensions: ");
         for (int i = 0; i <= 25; i++) {
-            if ((misa & (1<<i)) != 0) {
+            if ((misa & 1<<i) != 0) {
                 printf("%c", 'A' + i);
             }
         }
@@ -72,6 +72,6 @@ int kernel_start(uint64_t _idk, struct fdt_header* dtb) {
     csr_write("mideleg", mideleg);
     csr_write("medeleg", medeleg);
 
-    set_priv_m(01, &kernel_init, dtb);
+    set_priv_m(01, (void*)&kernel_init, dtb);
     return -1; // init failed ig
 }
