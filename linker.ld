@@ -19,12 +19,16 @@ SECTIONS {
 		PROVIDE(bss_end = .);
 	}
 	.rodata : ALIGN(4K) {
+	    PROVIDE(rodata_start = .);
 		*(.rodata);
+		PROVIDE(rodata_middle = .);
 		*(.rodata.*);
+		PROVIDE(rodata_end = .);
 	}
 	.data : ALIGN(4K) {
 		*(.data);
 		*(.data.*);
 	}
+	. = ALIGN(4K);
     kernel_end_ptr = .;
 }

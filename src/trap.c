@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include "trap.h"
 
+#include "frame.h"
+#include "page.h"
+
 static unsigned char TRAP_STACK[4096] __attribute__ ((aligned (4096)));
 unsigned long long counter __attribute__((aligned(16))) = 0;
 
@@ -136,7 +139,7 @@ void trap_handler(register_state_t* regs) {
 
 void init_traps() {
     printf("Init stvec to trap handler function\n");
-    csr_write("stvec", ((size_t)&naked_trap_handler)&~0b11);
+    csr_write("stvec", ((size_t)&naked_trap_handler + HIGHER_HALF_ADDR_START - kernel_start_addr)&~0b11);
     csr_write("sscratch", &TRAP_STACK[4096]);
 }
 

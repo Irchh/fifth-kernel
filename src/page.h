@@ -16,9 +16,12 @@
 
 #define ERR_ALIGN -1
 #define ERR_ALREADY_MAPPED -2
+#define ERR_NOT_MAPPED -3
+#define ERR_INCORRECT_MAP_TYPE -4
 
-#define HIGHER_HALF_ADDR_START 0xFFFFFFC000000000
-#define HIGHER_HALF_VPN 0x4000000
+#define HIGHER_HALF_ADDR_START 0xFFFFFFC000000000L
+#define HIGHER_HALF_VPN 0x4000000L
+#define IDENT_MAP_ADDR HIGHER_HALF_ADDR_START+(4L*1024*1024*1024)
 
 typedef unsigned int map_t;
 
@@ -39,5 +42,6 @@ typedef struct __attribute__((packed)) {
 } pte_rv39_t;
 
 void enable_paging();
+void unmap_lower_half_kernel();
 
 #endif

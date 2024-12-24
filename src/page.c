@@ -29,12 +29,7 @@ int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
         return ERR_ALIGN;
     }
 
-    int ppn_arr[3];
-    ppn_arr[0] = ppn&0x1FF;
-    ppn_arr[1] = (ppn>>9)&0x1FF;
-    ppn_arr[2] = (ppn>>18)&0x1FF;
-
-    int vpn_arr[3];
+    size_t vpn_arr[3];
     vpn_arr[0] = vpn&0x1FF;
     vpn_arr[1] = (vpn>>9)&0x1FF;
     vpn_arr[2] = (vpn>>18)&0x1FF;
@@ -48,7 +43,7 @@ int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
             table[vpn_arr[i]].r = 0;
             table[vpn_arr[i]].w = 0;
             table[vpn_arr[i]].x = 0;
-            table[vpn_arr[i]].ppn = ((size_t)allocate_new_page_table()/4096);
+            table[vpn_arr[i]].ppn = (size_t)allocate_new_page_table()/4096;
         } else if (table[vpn_arr[i]].r || table[vpn_arr[i]].w || table[vpn_arr[i]].x) {
             // Already mapped as part of bigger page
             return ERR_ALREADY_MAPPED;
@@ -72,8 +67,68 @@ int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
     return 0;
 }
 
-extern size_t kernel_start_addr;
-extern size_t kernel_end_addr;
+// TODO: Figure out if the table pointer should be a physical pointer or not. For now it is assumed that it is already correct for the current address space
+int unmap_page(pte_rv39_t* table, size_t vpn, map_t type) {
+    printf("Unmapping Page %#zx (%s)\n", vpn, type == MAP_GIGAPAGE ? "GIGAPAGE" : type == MAP_MEGAPAGE ? "MEGAPAGE" : "PAGE");
+    if (type == MAP_GIGAPAGE && vpn % MAP_GIGAPAGE_ALIGN != 0) {
+        return ERR_ALIGN;
+    }
+    if (type == MAP_MEGAPAGE && vpn % MAP_MEGAPAGE_ALIGN != 0) {
+        return ERR_ALIGN;
+    }
+
+    size_t vpn_arr[3];
+    vpn_arr[0] = vpn&0x1FF;
+    vpn_arr[1] = (vpn>>9)&0x1FF;
+    vpn_arr[2] = (vpn>>18)&0x1FF;
+
+    for (map_t i = type - 1; i > 0; i--) {
+        if (table[vpn_arr[i]].v == 0) {
+            return ERR_NOT_MAPPED;
+        }
+        if (table[vpn_arr[i]].r || table[vpn_arr[i]].w || table[vpn_arr[i]].x) {
+            // Trying to unmap a page with the incorrect page size,
+            // e.g. trying to unmap a normal 4k page but the allocated page is a megapage
+            return ERR_INCORRECT_MAP_TYPE;
+        }
+        table = (void*)(table[vpn_arr[i]].ppn*4096+IDENT_MAP_ADDR);
+    }
+
+    printf("Loop done\n");
+
+    pte_rv39_t* entry = &table[vpn_arr[3-type]];
+    if (entry->v == 0) {
+        return ERR_NOT_MAPPED;
+    }
+    memset(entry, 0, sizeof(pte_rv39_t));
+    __asm__ __volatile__ (
+        "sfence.vma x0, x0"
+    );
+    return 0;
+}
+
+void identity_map_memory(pte_rv39_t* table, size_t page_offset) {
+    for (size_t i = device_information.ram_start/4096; i < (device_information.ram_start+device_information.ram_size)/4096; i++) {
+        map_page(table, i, page_offset + i, MAP_PAGE);
+    }
+}
+
+void unmap_lower_half_kernel() {
+    size_t satp;
+    csr_read("satp", satp);
+    // Multiplying by 4096 automatically removes the higher bits used for other flags
+    pte_rv39_t* pt = (void*)(satp*4096+IDENT_MAP_ADDR);
+    printf("pt_hi: %#zx\n", pt);
+    printf("ident_map_offset: %#zx\n", IDENT_MAP_ADDR);
+    printf("&device_information: %#zx\n", &device_information);
+
+    size_t kernel_start_page = kernel_start_addr/4096;
+    size_t kernel_end_page = (kernel_end_addr+4095)/4096;
+    for (size_t page = kernel_start_page; page <= kernel_end_page; page++) {
+        // Keep currently needed pages as well, since we don't jump yet
+        unmap_page(pt, page, MAP_PAGE);
+    }
+}
 
 // Should only be called once at boot to transition to virtual memory
 void enable_paging() {
@@ -100,6 +155,9 @@ void enable_paging() {
         for (size_t page = start_page; page <= end_page; page++)
             map_page(pt, page, page, MAP_PAGE);
     }
+
+    // Identity map memory to higher half address + 4GiB
+    identity_map_memory(pt, HIGHER_HALF_VPN+1024*1024);
 
     size_t satp;
     csr_write("satp", ((size_t)pt)/4096 | PAGING_MODE_SV39);

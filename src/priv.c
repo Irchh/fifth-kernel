@@ -14,7 +14,9 @@ void set_priv_m(size_t level, void* entry_func, struct fdt_header* dtb) {
     size_t pmpcfg0 = 0xf;
     csr_write("pmpaddr0", pmpaddr0);
     csr_write("pmpcfg0", pmpcfg0);
-    __asm__("mret"
+    __asm__ __volatile__ (
+        "add a0, zero, %0\n"
+        "mret"
     : : "r" (dtb)
     );
     while (1);
