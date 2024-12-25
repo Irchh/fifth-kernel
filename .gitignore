@@ -1,3 +1,4 @@
 /build
 /cmake-build-debug
+/test_program/test_program
 /.idea

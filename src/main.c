@@ -26,6 +26,9 @@ void modify_rodata_ptrs() {
     }
 }
 
+extern uint64_t test_program_start;
+extern uint64_t test_program_end;
+
 void kernel_main() {
     counter = 69;
     uint64_t counter2 = 0;
@@ -43,6 +46,9 @@ void kernel_main() {
 
     printf("Skibidi\n");
     printf("Value of counter_ident: %zd\n", *counter_ident);
+
+    printf("test_program_start: %#zx\n", &test_program_start);
+    printf("test_program_end: %#zx\n", &test_program_end);
 
     while(1) {
         printf("counter: %zd (%zd)\r", counter, counter2++);

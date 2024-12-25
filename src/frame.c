@@ -5,8 +5,8 @@
 
 uint8_t frames[32768]; // 4096 * 8 = enough data to allocate up to 1 GiB in frames. Each 4096 bytes is equivalent to 128 MiB in 4KiB frames.
 
-size_t kernel_start_addr = (size_t)&kernel_start_ptr;
-size_t kernel_end_addr = (size_t)&kernel_end_ptr;
+size_t kernel_start_addr;
+size_t kernel_end_addr;
 
 size_t pages(size_t bytes) {
     return (bytes + 4095)/4096;
@@ -44,6 +44,8 @@ void allocate_n_frames(size_t start, size_t count) {
 }
 
 void init_frames() {
+    kernel_start_addr = (size_t)&kernel_start_ptr;
+    kernel_end_addr = (size_t)&kernel_end_ptr;
     for (size_t i = 0; i < sizeof(frames); i++) {
         frames[i] = 0;
     }
