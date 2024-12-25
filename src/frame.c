@@ -3,6 +3,7 @@
 #include "mem.h"
 #include "fdt.h"
 
+// Can potentially be changed to `uint64_t frames[4096]` for the same size, but faster searching for free frames.
 uint8_t frames[32768]; // 4096 * 8 = enough data to allocate up to 1 GiB in frames. Each 4096 bytes is equivalent to 128 MiB in 4KiB frames.
 
 size_t kernel_start_addr;
@@ -13,7 +14,7 @@ size_t pages(size_t bytes) {
 }
 
 size_t allocate_frame(size_t frame) {
-    if (frame >= sizeof(frames)) {
+    if (frame >= sizeof(frames)*8) {
         return -1;
     }
     size_t byte = frame/8;
