@@ -127,13 +127,7 @@ void identity_map_memory(pte_rv39_t* table, size_t page_offset) {
 }
 
 void unmap_lower_half_kernel() {
-    size_t satp;
-    csr_read("satp", satp);
-    // Multiplying by 4096 automatically removes the higher bits used for other flags
-    pte_rv39_t* pt = (void*)(satp*4096+ident_map_addr);
-    printf("pt_hi: %#zx\n", pt);
-    printf("ident_map_offset: %#zx\n", ident_map_addr);
-    printf("&device_information: %#zx\n", &device_information);
+    pte_rv39_t* pt = current_pt();
 
     size_t kernel_start_page = kernel_start_addr/4096;
     size_t kernel_end_page = (kernel_end_addr+4095)/4096;

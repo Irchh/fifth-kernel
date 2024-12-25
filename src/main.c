@@ -32,24 +32,8 @@ extern uint64_t test_program_end;
 void kernel_main() {
     counter = 69;
     uint64_t counter2 = 0;
-    uint64_t* counter_low = (void*)((size_t)&counter - HIGHER_HALF_ADDR_START + kernel_start_addr);
-    uint64_t* counter_ident = (void*)((size_t)counter_low + IDENT_MAP_ADDR);
 
     unmap_lower_half_kernel();
-
-    printf("Addr of counter: %#zx\n", &counter);
-    printf("Addr of counter2: %#zx\n", &counter2);
-    printf("Addr of counter_ident: %#zx\n", counter_ident);
-    printf("Addr of counter_low: %#zx\n\n", counter_low);
-
-    printf("Addr of printf_: %#zx\n", &printf_);
-
-    size_t frame = frame_to_phys_addr(allocate_first_frame());
-    map_page(frame/4096, (size_t)counter_low/4096, MAP_PAGE);
-    printf("Value of counter_ident: %zd\n", *counter_ident);
-    printf("Value of counter_low: %zd\n", *counter_low);
-    unmap_page((size_t)counter_low/4096, MAP_PAGE);
-    printf("Value of counter_low: %zd\n", *counter_low); // Should trap since there is no page loaded there
 
     printf("test_program_start: %#zx\n", &test_program_start);
     printf("test_program_end: %#zx\n", &test_program_end);
@@ -80,7 +64,6 @@ void kernel_init(struct fdt_header* dtb) {
 
     // Modify the stack to use the higher address
     void (*kernel_main_hi)(size_t) = &setup_post_relocation + HIGHER_HALF_ADDR_START - kernel_start_addr;
-    printf("Jumping to %p\n", kernel_main_hi);
     kernel_main_hi(HIGHER_HALF_ADDR_START - kernel_start_addr);
     //kernel_main();
 }
