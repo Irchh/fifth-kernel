@@ -10,6 +10,7 @@ size_t allocate_frame(size_t frame);
 size_t allocate_first_frame();
 void deallocate_frame(size_t frame);
 void allocate_n_frames(size_t frame, size_t count);
+size_t frame_to_phys_addr(size_t frame);
 
 extern const size_t kernel_start_ptr;
 extern const size_t kernel_end_ptr;

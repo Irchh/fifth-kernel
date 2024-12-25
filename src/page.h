@@ -1,6 +1,8 @@
 #ifndef PAGE_H
 #define PAGE_H
 
+#include "mem.h"
+
 #define PAGING_MODE_BARE 0b0000L<<60
 #define PAGING_MODE_SV39 0b1000L<<60
 #define PAGING_MODE_SV48 0b1001L<<60
@@ -43,5 +45,7 @@ typedef struct __attribute__((packed)) {
 
 void enable_paging();
 void unmap_lower_half_kernel();
+int map_page(size_t ppn, size_t vpn, map_t type);
+int unmap_page(size_t vpn, map_t type);
 
 #endif

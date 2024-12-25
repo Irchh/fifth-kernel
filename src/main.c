@@ -44,8 +44,12 @@ void kernel_main() {
 
     printf("Addr of printf_: %#zx\n", &printf_);
 
-    printf("Skibidi\n");
+    size_t frame = frame_to_phys_addr(allocate_first_frame());
+    map_page(frame/4096, (size_t)counter_low/4096, MAP_PAGE);
     printf("Value of counter_ident: %zd\n", *counter_ident);
+    printf("Value of counter_low: %zd\n", *counter_low);
+    unmap_page((size_t)counter_low/4096, MAP_PAGE);
+    printf("Value of counter_low: %zd\n", *counter_low); // Should trap since there is no page loaded there
 
     printf("test_program_start: %#zx\n", &test_program_start);
     printf("test_program_end: %#zx\n", &test_program_end);

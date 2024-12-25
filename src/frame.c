@@ -9,6 +9,10 @@ uint8_t frames[32768]; // 4096 * 8 = enough data to allocate up to 1 GiB in fram
 size_t kernel_start_addr;
 size_t kernel_end_addr;
 
+size_t frame_to_phys_addr(size_t frame) {
+    return frame*4096+device_information.ram_start;
+}
+
 size_t pages(size_t bytes) {
     return (bytes + 4095)/4096;
 }
