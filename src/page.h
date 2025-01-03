@@ -20,6 +20,8 @@
 #define ERR_ALREADY_MAPPED -2
 #define ERR_NOT_MAPPED -3
 #define ERR_INCORRECT_MAP_TYPE -4
+#define ERR_NULL_PT -5
+#define ERR_UNABLE_TO_MAP -6
 
 #define HIGHER_HALF_ADDR_START 0xFFFFFFC000000000L
 #define HIGHER_HALF_VPN 0x4000000L
@@ -45,7 +47,8 @@ typedef struct __attribute__((packed)) {
 
 void enable_paging();
 void unmap_lower_half_kernel();
-int map_page(size_t ppn, size_t vpn, map_t type);
-int unmap_page(size_t vpn, map_t type);
+int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type);
+int unmap_page(pte_rv39_t* table, size_t vpn, map_t type);
+int allocate_a_page(size_t *ppn, size_t *vpn);
 
 #endif

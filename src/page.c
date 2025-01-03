@@ -29,12 +29,19 @@ void create_ident_map_page_table(pte_rv39_t* table) {
 }
 
 
-int _map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
+int map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
     if (type == MAP_GIGAPAGE && (ppn % MAP_GIGAPAGE_ALIGN != 0 || vpn % MAP_GIGAPAGE_ALIGN != 0)) {
         return ERR_ALIGN;
     }
     if (type == MAP_MEGAPAGE && (ppn % MAP_MEGAPAGE_ALIGN != 0 || vpn % MAP_MEGAPAGE_ALIGN != 0)) {
         return ERR_ALIGN;
+    }
+
+    if (table == nullptr) {
+        table = current_pt();
+        if (table == nullptr) {
+            return ERR_NULL_PT;
+        }
     }
 
     size_t vpn_arr[3];
@@ -72,20 +79,44 @@ int _map_page(pte_rv39_t* table, size_t ppn, size_t vpn, map_t type) {
     entry->v = 1;
     entry->ppn = ppn;
 
+    __asm__ __volatile__ (
+        "sfence.vma x0, x0"
+    );
+
     return 0;
 }
 
-int map_page(size_t ppn, size_t vpn, map_t type) {
-    return _map_page(current_pt(), ppn, vpn, type);
+int allocate_a_page(size_t *ppn, size_t *vpn) {
+    const auto frame = first_free_frame();
+    const auto allocated_ppn = frame_to_phys_addr(allocate_frame(frame))/4096;
+    for (size_t i = 0x80000; i <= 0x100000; i++) {
+        const auto res = map_page(nullptr, allocated_ppn, i, MAP_PAGE);
+        if (res == 0) {
+            *ppn = allocated_ppn;
+            *vpn = i;
+            return 0;
+        }
+    }
+    *ppn = 0;
+    *vpn = 0;
+    deallocate_frame(frame);
+    return ERR_UNABLE_TO_MAP;
 }
 
 // TODO: Figure out if the table pointer should be a physical pointer or not. For now it is assumed that it is already correct for the current address space
-int _unmap_page(pte_rv39_t* table, size_t vpn, map_t type) {
+int unmap_page(pte_rv39_t* table, size_t vpn, map_t type) {
     if (type == MAP_GIGAPAGE && vpn % MAP_GIGAPAGE_ALIGN != 0) {
         return ERR_ALIGN;
     }
     if (type == MAP_MEGAPAGE && vpn % MAP_MEGAPAGE_ALIGN != 0) {
         return ERR_ALIGN;
+    }
+
+    if (table == nullptr) {
+        table = current_pt();
+        if (table == nullptr) {
+            return ERR_NULL_PT;
+        }
     }
 
     size_t vpn_arr[3];
@@ -113,16 +144,13 @@ int _unmap_page(pte_rv39_t* table, size_t vpn, map_t type) {
     __asm__ __volatile__ (
         "sfence.vma x0, x0"
     );
+    // TODO: check if entire page table is empty, and deallocate it
     return 0;
-}
-
-int unmap_page(size_t vpn, map_t type) {
-    return _unmap_page(current_pt(), vpn, type);
 }
 
 void identity_map_memory(pte_rv39_t* table, size_t page_offset) {
     for (size_t i = device_information.ram_start/4096; i < (device_information.ram_start+device_information.ram_size)/4096; i++) {
-        _map_page(table, i, page_offset + i, MAP_PAGE);
+        map_page(table, i, page_offset + i, MAP_PAGE);
     }
 }
 
@@ -133,7 +161,7 @@ void unmap_lower_half_kernel() {
     size_t kernel_end_page = (kernel_end_addr+4095)/4096;
     for (size_t page = kernel_start_page; page <= kernel_end_page; page++) {
         // Keep currently needed pages as well, since we don't jump yet
-        _unmap_page(pt, page, MAP_PAGE);
+        unmap_page(pt, page, MAP_PAGE);
     }
 }
 
@@ -148,9 +176,9 @@ void enable_paging() {
     // Map kernel pages
     for (size_t page = kernel_start_page; page <= kernel_end_page; page++) {
         // Keep currently needed pages as well, since we don't jump yet
-        _map_page(pt, page, page, MAP_PAGE);
+        map_page(pt, page, page, MAP_PAGE);
         // Higher-half kernel maps
-        _map_page(pt, page, HIGHER_HALF_VPN+page-kernel_start_page, MAP_PAGE);
+        map_page(pt, page, HIGHER_HALF_VPN+page-kernel_start_page, MAP_PAGE);
     }
 
     // Map memory mapped devices like uart, etc.
@@ -161,7 +189,7 @@ void enable_paging() {
         size_t end_page = (device_information.mapped_locations[i].address + device_information.mapped_locations[i].size + 4095) / 4096;
         // TODO: Map larger pages for larger areas, if possible
         for (size_t page = start_page; page <= end_page; page++)
-            _map_page(pt, page, page, MAP_PAGE);
+            map_page(pt, page, page, MAP_PAGE);
     }
 
     // Identity map memory to higher half address + 4GiB

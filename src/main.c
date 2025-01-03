@@ -6,6 +6,7 @@
 #include "frame.h"
 #include "priv.h"
 #include "page.h"
+#include "elf.h"
 
 extern long long add(long long a, long long b);
 extern void setup_post_relocation(size_t relocation_addr_diff);
@@ -37,6 +38,8 @@ void kernel_main() {
 
     printf("test_program_start: %#zx\n", &test_program_start);
     printf("test_program_end: %#zx\n", &test_program_end);
+
+    load_elf(&test_program_start);
 
     while(1) {
         printf("counter: %zd (%zd)\r", counter, counter2++);
